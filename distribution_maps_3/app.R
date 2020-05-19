@@ -87,7 +87,7 @@ server <- function(input, output) {
   observe({
     run<-TRUE
     sp <- input$Species
- 
+    # sp <-  binoms[1]
     
     ## Get eoa
     query<-sprintf("select * from mammals where binomial = '%s' ", sp)
@@ -123,7 +123,7 @@ server <- function(input, output) {
     
     
     area<-st_area(IUCN_range)
-    h<-hist(pop, breaks=c(0,1,10,100,1000,10000,100000,1000000))$counts
+    h<-hist(pop, breaks=c(0,1,10,100,1000,10000,100000,1000000), plot=FALSE)$counts
     classes<-c("0-1","1-10","10-100","100-1000","1k-1k","10k-100k", "100k+")
     d<-data.frame(classes,area=round(as.numeric(area*h/sum(h))/1000000,0))
     d$percent<-round(100*d$area/sum(d$area),1)
