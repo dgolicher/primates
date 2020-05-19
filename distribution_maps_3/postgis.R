@@ -8,7 +8,9 @@ sp <- "Pongo abelii"
 
 query<-sprintf("select * from mammals where binomial in ('%s') ", sp)
 query
-eoa<-st_read(con, query=query)
+# query<-"select * from mammals where order_ like 'PRIMATES' "
+# primate_ranges<-st_read(con, query=query)
+# save(primate_ranges,file="primate_ranges.rda")
 mapview(eoa)
 
 query<-sprintf("select * from gbif_primates where species = '%s' ", sp)
