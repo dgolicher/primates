@@ -34,7 +34,7 @@ binoms<-sort(binoms)[-c(2,4,8)]
 
 binoms<-unique(primate_ranges$binomial)
 binoms2<-unique(gbif$species)
-binoms3<-unique(as.character(primates_maps$NAME))
+binoms3<-unique(as.character(primates_maps$binomial))
 binoms<-binoms[binoms%in% binoms2]
 binoms<-binoms[binoms%in% binoms3]
 
@@ -165,7 +165,7 @@ output$results_table<-renderDataTable(dt(results_table))
     
     ##############################
     
-    primates_map <-filter(primates_maps, NAME== sp)
+    primates_map <-filter(primates_maps, binomial== sp)
     map<- mapview(GBIF_points) + mapview(IUCN_range) + mapview( GBIF_buffer) + mapview(primates_map, col.regions= "red")
     
     output$map <- renderLeaflet(
