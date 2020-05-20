@@ -21,6 +21,7 @@ rm(d)
 
 load("/home/rstudio/shiny/primates/primate_ranges.rda")
 load("/home/rstudio/shiny/primates/gbif_primates.rda")
+load("/home/rstudio/shiny/primates/primates_maps.rda")
 #library(readxl)
 #new_list<- read_excel("~/shiny/primates/distribution_maps_3/IUCN_Apr2020_SelectedGeneraCovid.xlsx")$binomial
 # save(new_list,file="new_list.rda")
@@ -33,7 +34,10 @@ binoms<-sort(binoms)[-c(2,4,8)]
 
 binoms<-unique(primate_ranges$binomial)
 binoms2<-unique(gbif$species)
+binoms3<-unique(as.character(primates_maps$NAME))
 binoms<-binoms[binoms%in% binoms2]
+binoms<-binoms[binoms%in% binoms3]
+
 
 library(giscourse)
 con<-sconnect()
@@ -160,7 +164,9 @@ output$results_table<-renderDataTable(dt(results_table))
       
     
     ##############################
-    map<- mapview(GBIF_points) + mapview(IUCN_range) + mapview( GBIF_buffer) 
+    
+    primates_map <-filter(primates_maps, NAME== sp)
+    map<- mapview(GBIF_points) + mapview(IUCN_range) + mapview( GBIF_buffer) + mapview(primates_map, col.regions= "red")
     
     output$map <- renderLeaflet(
       {map@map %>% addWMSTiles(group="Population",

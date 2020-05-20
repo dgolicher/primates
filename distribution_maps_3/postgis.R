@@ -1,5 +1,8 @@
-#load("gbif_primates.rda")
+# load("gbif_primates.rda")
+# library(sf)
+# primates_maps<-st_read("/home/rstudio/shiny/primates/Primates_maps_2014_07_03/Primates_2014_07_03.shp")
 
+str(d)
 library(giscourse)
 con<-sconnect()
 library(sf)
