@@ -14,8 +14,13 @@ library(dplyr)
 library(ggplot2)
 library(plotly)
 library(sf)
+load("/home/rstudio/shiny/primates/results.rda")
+results_table<-d
+results_table %>% arrange(-tot_pop) -> results_table
+rm(d)
 
-
+load("/home/rstudio/shiny/primates/primate_ranges.rda")
+load("/home/rstudio/shiny/primates/gbif_primates.rda")
 #library(readxl)
 #new_list<- read_excel("~/shiny/primates/distribution_maps_3/IUCN_Apr2020_SelectedGeneraCovid.xlsx")$binomial
 # save(new_list,file="new_list.rda")
@@ -26,8 +31,9 @@ sp_list$Genus <- gsub("Piliolocbus", "Piliocolobus", sp_list$Genus)
 binoms<-paste(sp_list$Genus, sp_list$Species)
 binoms<-sort(binoms)[-c(2,4,8)]
 
-binoms<-new_list
-
+binoms<-unique(primate_ranges$binomial)
+binoms2<-unique(gbif$species)
+binoms<-binoms[binoms%in% binoms2]
 
 library(giscourse)
 con<-sconnect()
@@ -72,6 +78,7 @@ ui <- fluidPage(
                   verbatimTextOutput  ("results"),
                    h4("More to be added to illustrate results for each species selected")),
           tabPanel("Table of population densities",  dataTableOutput("pop_dense")),
+          tabPanel("Table for all species",  dataTableOutput("results_table")),
           tabPanel("All species map",  leafletOutput("map2"))
           
           )
@@ -82,20 +89,24 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  
+output$results_table<-renderDataTable(dt(results_table))
   
   observe({
     run<-TRUE
+    
     sp <- input$Species
     # sp <-  binoms[1]
     
     ## Get eoa
-    query<-sprintf("select * from mammals where binomial = '%s' ", sp)
-    IUCN_range<-st_read(con, query=query)
+    # query<-sprintf("select * from mammals where binomial = '%s' ", sp)
+    # IUCN_range<-st_read(con, query=query)
+    IUCN_range <-filter(primate_ranges,binomial==sp)
     if(!dim(eoos)[1]>1) run<-FALSE
     ## Get gbif
-    query<-sprintf("select * from gbif_primates where species = '%s' ", sp)
-    GBIF_points   <-st_read(con, query=query)
+    # query<-sprintf("select * from gbif_primates where species = '%s' ", sp)
+    # GBIF_points   <-st_read(con, query=query)
+    
+    GBIF_points<-filter(gbif,species == sp)
     if(!dim(GBIF_points)[1]>1) run<-FALSE
     
   if(run){
@@ -122,11 +133,12 @@ server <- function(input, output) {
     d1<-data.frame(x=na.omit(as.vector(pop)))
     
     
-    area<-st_area(IUCN_range)
-    h<-hist(pop, breaks=c(0,1,10,100,1000,10000,100000,1000000), plot=FALSE)$counts
-    classes<-c("0-1","1-10","10-100","100-1000","1k-1k","10k-100k", "100k+")
+    area<-st_area(st_union(IUCN_range))
+    h<-hist(pop, breaks=c(0,1,10,100,1000,10000,1000000), plot=FALSE)$counts
+    classes<-c("0-1","1-10","10-100","100-1000","1k-10k","10k+")
     d<-data.frame(classes,area=round(as.numeric(area*h/sum(h))/1000000,0))
     d$percent<-round(100*d$area/sum(d$area),1)
+    
     
     output$pop_dense<-renderDataTable(dt(d))
     output$results<-renderPrint({
