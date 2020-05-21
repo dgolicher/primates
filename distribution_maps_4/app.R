@@ -94,7 +94,7 @@ output$results_table<-renderDataTable(dt(results_table))
     
     output$myImage <- renderImage({
      
-      outfile <- sprintf("/home/rstudio/shiny/primates/figs/thumbs/%s.jpg",sp)
+      outfile <- sprintf("/home/rstudio/shiny/primates/figs/thumbs2/%s.jpg",sp)
       
     
       
