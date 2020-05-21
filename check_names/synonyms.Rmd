@@ -1,0 +1,47 @@
+---
+title: "Synonyms"
+author: "Duncan Golicher"
+date: "20/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, message=FALSE,results='hide',warning=FALSE}
+library(tidyverse)
+library(aqm)
+```
+
+```{r}
+load("synonyms.rda")
+load("synonyms2a.rda")
+load("synonyms2.rda")
+
+d1$source <- "IUCN"
+d2$source <- "GBIF"
+d3$source <- "primate_maps"
+d<-unique(rbind(d1,d2,d3))
+
+dd<-unique(d[,c(7,3)])
+
+
+```
+
+
+## Raw data
+
+
+```{r}
+dt(d)
+```
+
+
+## Simplified list
+
+```{r}
+dt(dd)
+```
+

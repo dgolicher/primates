@@ -82,8 +82,8 @@ ui <- fluidPage(
                   verbatimTextOutput  ("results"),
                    h4("More to be added to illustrate results for each species selected")),
           tabPanel("Table of population densities",  dataTableOutput("pop_dense")),
-          tabPanel("Table for all species",  dataTableOutput("results_table")),
-          tabPanel("All species map",  leafletOutput("map2"))
+          tabPanel("Table for all species",  dataTableOutput("results_table"))
+          # tabPanel("All species map",  leafletOutput("map2"))
           
           )
         

@@ -22,19 +22,12 @@ rm(d)
 load("/home/rstudio/shiny/primates/primate_ranges.rda")
 load("/home/rstudio/shiny/primates/gbif_primates.rda")
 load("/home/rstudio/shiny/primates/primates_maps.rda")
-#library(readxl)
-#new_list<- read_excel("~/shiny/primates/distribution_maps_3/IUCN_Apr2020_SelectedGeneraCovid.xlsx")$binomial
-# save(new_list,file="new_list.rda")
-load("new_list.rda")
-sp_list<- read.csv("CovidSpeciesList.csv")
 
-sp_list$Genus <- gsub("Piliolocbus", "Piliocolobus", sp_list$Genus)
-binoms<-paste(sp_list$Genus, sp_list$Species)
-binoms<-sort(binoms)[-c(2,4,8)]
+
 
 binoms<-unique(primate_ranges$binomial)
 binoms2<-unique(gbif$species)
-binoms3<-unique(as.character(primates_maps$NAME))
+binoms3<-unique(as.character(primates_maps$binomial))
 binoms<-binoms[binoms%in% binoms2]
 binoms<-binoms[binoms%in% binoms3]
 
@@ -65,13 +58,9 @@ ui <- fluidPage(
    # Sidebar with a slider input for number of bins 
    sidebarLayout(
       sidebarPanel(
-      selectizeInput ("Species", label="Choose species:",choices = binoms, selected = "Rhinopithecus roxelana")
+      selectizeInput ("Species", label="Choose species:",choices = binoms, selected = "Rhinopithecus roxelana"),
+      imageOutput("myImage")
       ),
-      
-    
-      
-      
-      
       
       mainPanel(
         tabsetPanel(type = "tabs",
@@ -82,8 +71,8 @@ ui <- fluidPage(
                   verbatimTextOutput  ("results"),
                    h4("More to be added to illustrate results for each species selected")),
           tabPanel("Table of population densities",  dataTableOutput("pop_dense")),
-          tabPanel("Table for all species",  dataTableOutput("results_table")),
-          tabPanel("All species map",  leafletOutput("map2"))
+          tabPanel("Table for all species",  dataTableOutput("results_table"))
+          # tabPanel("All species map",  leafletOutput("map2"))
           
           )
         
@@ -99,6 +88,24 @@ output$results_table<-renderDataTable(dt(results_table))
     run<-TRUE
     
     sp <- input$Species
+    
+###### Images
+ 
+    
+    output$myImage <- renderImage({
+     
+      outfile <- sprintf("/home/rstudio/shiny/primates/figs/thumbs/%s.jpg",sp)
+      
+    
+      
+      # Return a list containing the filename
+      list(src = outfile,
+           alt = "No image for this species")
+    })
+      
+    
+    
+    
     # sp <-  binoms[1]
     
     ## Get eoa
@@ -165,7 +172,7 @@ output$results_table<-renderDataTable(dt(results_table))
     
     ##############################
     
-    primates_map <-filter(primates_maps, NAME== sp)
+    primates_map <-filter(primates_maps, binomial== sp)
     map<- mapview(GBIF_points) + mapview(IUCN_range) + mapview( GBIF_buffer) + mapview(primates_map, col.regions= "red")
     
     output$map <- renderLeaflet(

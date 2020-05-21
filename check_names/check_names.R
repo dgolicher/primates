@@ -25,9 +25,11 @@ binoms<-binoms3[!binoms3%in% binoms1]
 
 
 library(taxize)
-d<-synonyms(binoms, "itis")
-syns_map<-synonyms_df(d)
-save(syns_map,file="synonyms.rda")
+d<-synonyms(sort(na.omit(binoms3)), "itis", rows=1)
+
+syns_iucn<-synonyms_df(d)
+filter(syns_iucn, .id != acc_name) -> d3
+save(d3,file="synonyms2.rda")
 
 
 
