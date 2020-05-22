@@ -97,7 +97,7 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output,session) {
-output$results_table<-renderDataTable(dt(results_table))
+output$results_table<-renderDataTable(server = FALSE,dt(results_table))
   
 tryObserve({
     run<-TRUE

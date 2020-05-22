@@ -14,6 +14,20 @@ library(dplyr)
 library(ggplot2)
 library(plotly)
 library(sf)
+
+tryObserve <- function(x) {
+  x <- substitute(x)
+  env <- parent.frame()
+  observe({
+    tryCatch(
+      eval(x, env),
+      error = function(e) {
+        showNotification(paste("Error: ", e$message), type = "error")
+      }
+    )
+  })
+}
+
 load("/home/rstudio/shiny/primates/results.rda")
 results_table<-d
 results_table %>% arrange(-tot_pop) -> results_table
@@ -22,15 +36,8 @@ rm(d)
 load("/home/rstudio/shiny/primates/primate_ranges.rda")
 load("/home/rstudio/shiny/primates/gbif_primates.rda")
 load("/home/rstudio/shiny/primates/primates_maps.rda")
-#library(readxl)
-#new_list<- read_excel("~/shiny/primates/distribution_maps_3/IUCN_Apr2020_SelectedGeneraCovid.xlsx")$binomial
-# save(new_list,file="new_list.rda")
-load("new_list.rda")
-sp_list<- read.csv("CovidSpeciesList.csv")
 
-sp_list$Genus <- gsub("Piliolocbus", "Piliocolobus", sp_list$Genus)
-binoms<-paste(sp_list$Genus, sp_list$Species)
-binoms<-sort(binoms)[-c(2,4,8)]
+
 
 binoms<-unique(primate_ranges$binomial)
 binoms2<-unique(gbif$species)
@@ -65,13 +72,10 @@ ui <- fluidPage(
    # Sidebar with a slider input for number of bins 
    sidebarLayout(
       sidebarPanel(
-      selectizeInput ("Species", label="Choose species:",choices = binoms, selected = "Rhinopithecus roxelana")
+      selectizeInput ("Species", label="Choose species:",choices = binoms, selected = "Rhinopithecus roxelana"),
+      imageOutput("myImage"),
+      htmlOutput("selURL") 
       ),
-      
-    
-      
-      
-      
       
       mainPanel(
         tabsetPanel(type = "tabs",
@@ -92,13 +96,32 @@ ui <- fluidPage(
 )
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
-output$results_table<-renderDataTable(dt(results_table))
+server <- function(input, output,session) {
+output$results_table<-renderDataTable(server = FALSE,dt(results_table))
   
-  observe({
+tryObserve({
     run<-TRUE
     
     sp <- input$Species
+    
+###### Images
+   
+    
+    
+    output$myImage <- renderImage(deleteFile=FALSE, {
+     
+      outfile <- sprintf("/home/rstudio/shiny/primates/figs/thumbs2/%s.jpg",sp)
+      
+    
+      
+      # Return a list containing the filename
+      list(src = outfile,
+           alt = "No image for this species")
+    })
+      
+    
+    
+    
     # sp <-  binoms[1]
     
     ## Get eoa
@@ -111,7 +134,7 @@ output$results_table<-renderDataTable(dt(results_table))
     # GBIF_points   <-st_read(con, query=query)
     
     GBIF_points<-filter(gbif,species == sp)
-    if(!dim(GBIF_points)[1]>1) run<-FALSE
+    if(!dim(GBIF_points)[1]>0) run<-FALSE
     
   if(run){
     
