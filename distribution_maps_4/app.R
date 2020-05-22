@@ -14,6 +14,20 @@ library(dplyr)
 library(ggplot2)
 library(plotly)
 library(sf)
+
+tryObserve <- function(x) {
+  x <- substitute(x)
+  env <- parent.frame()
+  observe({
+    tryCatch(
+      eval(x, env),
+      error = function(e) {
+        showNotification(paste("Error: ", e$message), type = "error")
+      }
+    )
+  })
+}
+
 load("/home/rstudio/shiny/primates/results.rda")
 results_table<-d
 results_table %>% arrange(-tot_pop) -> results_table
@@ -59,7 +73,8 @@ ui <- fluidPage(
    sidebarLayout(
       sidebarPanel(
       selectizeInput ("Species", label="Choose species:",choices = binoms, selected = "Rhinopithecus roxelana"),
-      imageOutput("myImage")
+      imageOutput("myImage"),
+      htmlOutput("selURL") 
       ),
       
       mainPanel(
@@ -81,16 +96,17 @@ ui <- fluidPage(
 )
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output,session) {
 output$results_table<-renderDataTable(dt(results_table))
   
-  observe({
+tryObserve({
     run<-TRUE
     
     sp <- input$Species
     
 ###### Images
- 
+   
+    
     
     output$myImage <- renderImage(deleteFile=FALSE, {
      
@@ -118,7 +134,7 @@ output$results_table<-renderDataTable(dt(results_table))
     # GBIF_points   <-st_read(con, query=query)
     
     GBIF_points<-filter(gbif,species == sp)
-    if(!dim(GBIF_points)[1]>1) run<-FALSE
+    if(!dim(GBIF_points)[1]>0) run<-FALSE
     
   if(run){
     
