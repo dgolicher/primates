@@ -37,14 +37,17 @@ load("/home/rstudio/shiny/primates/primate_ranges.rda")
 load("/home/rstudio/shiny/primates/gbif_primates.rda")
 load("/home/rstudio/shiny/primates/primates_maps.rda")
 
-
+primate_ranges$binomial<-primate_ranges$acc_name
+gbif$species<-gbif$acc_name
+primates_maps$binomial<-primates_maps$acc_name
 
 binoms<-unique(primate_ranges$binomial)
 binoms2<-unique(gbif$species)
 binoms3<-unique(as.character(primates_maps$binomial))
 binoms<-binoms[binoms%in% binoms2]
 binoms<-binoms[binoms%in% binoms3]
-
+binoms <- sort(binoms)
+binoms
 
 library(giscourse)
 con<-sconnect()

@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE,warning = FALSE,message = FALSE)
 ```
 
 
@@ -30,18 +30,46 @@ dd<-unique(d[,c(7,3)])
 
 ```
 
-
-## Raw data
-
-
 ```{r}
-dt(d)
+
+# names(dd)[1]<-"binomial"
+# 
+# load("/home/rstudio/shiny/primates/primate_ranges.rda")
+# load("/home/rstudio/shiny/primates/gbif_primates.rda")
+# load("/home/rstudio/shiny/primates/primates_maps.rda")
+# 
+# library(dplyr)
+# 
+# gbif$binomial<-gbif$species
+# 
+# primate_ranges<-left_join(primate_ranges, dd)
+# primate_ranges$acc_name[is.na(primate_ranges$acc_name)]<-primate_ranges$binomial[is.na(primate_ranges$acc_name)]
+# 
+# gbif<-left_join(gbif, dd)
+# gbif$acc_name[is.na(gbif$acc_name)]<-gbif$binomial[is.na(gbif$acc_name)]
+# 
+# primates_maps<-left_join(primates_maps, dd)
+# primates_maps$acc_name[is.na(primates_maps$acc_name)]<-primates_maps$binomial[is.na(primates_maps$acc_name)]
+# 
+# save(primate_ranges, file="/home/rstudio/shiny/primates/primate_ranges.rda")
+# save(gbif,file="/home/rstudio/shiny/primates/gbif_primates.rda")
+# save(primates_maps,file="/home/rstudio/shiny/primates/primates_maps.rda")
+
 ```
 
 
-## Simplified list
-
 ```{r}
-dt(dd)
+load("/home/rstudio/shiny/primates/primate_ranges.rda")
+load("/home/rstudio/shiny/primates/gbif_primates.rda")
+load("/home/rstudio/shiny/primates/primates_maps.rda")
+
+d1<- data.frame(binom=unique(primate_ranges$acc_name), iucn=unique(primate_ranges$acc_name))
+d2<- data.frame(binom=unique(gbif$acc_name),gbif=unique(gbif$acc_name))
+d3<- data.frame(binom=unique(primates_maps$acc_name), maps=unique(primates_maps$acc_name))
+
+d<-left_join(d1, d2)
+d<-left_join(d, d3)
+
+dt(d)
 ```
 

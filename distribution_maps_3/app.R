@@ -14,6 +14,10 @@ library(dplyr)
 library(ggplot2)
 library(plotly)
 library(sf)
+library(googleway)
+library(stringr)
+
+
 
 tryObserve <- function(x) {
   x <- substitute(x)
@@ -37,27 +41,26 @@ load("/home/rstudio/shiny/primates/primate_ranges.rda")
 load("/home/rstudio/shiny/primates/gbif_primates.rda")
 load("/home/rstudio/shiny/primates/primates_maps.rda")
 
-
+primate_ranges$binomial<-primate_ranges$acc_name
+gbif$species<-gbif$acc_name
+primates_maps$binomial<-primates_maps$acc_name
 
 binoms<-unique(primate_ranges$binomial)
 binoms2<-unique(gbif$species)
 binoms3<-unique(as.character(primates_maps$binomial))
 binoms<-binoms[binoms%in% binoms2]
 binoms<-binoms[binoms%in% binoms3]
+binoms <- sort(binoms)
+bb<-data.frame(binoms)
+library(tidyr)
+separate(bb,binoms,into=c("genus","species"))->bb
 
-
-library(giscourse)
-con<-sconnect()
-
-eoos<-read_sf(con,query="select * from primate_eoos")
-#save(eoos,file="eoos.rda")
-# load("eoos.rda")
 binoms<-sort(binoms)
 library(RColorBrewer)
 pal1<-brewer.pal(8, "YlOrRd")
 pal2<-brewer.pal(8, "YlGnBu")[8:1]
 pal3<-brewer.pal(8, "YlOrRd")[8:1]
-eoos_map<-mapview(eoos, zcol="population", at =c(0,10,20,100,200,500,1000,2000),legend=TRUE,col.regions = pal1)
+
 
 
 
@@ -72,7 +75,10 @@ ui <- fluidPage(
    # Sidebar with a slider input for number of bins 
    sidebarLayout(
       sidebarPanel(
-      selectizeInput ("Species", label="Choose species:",choices = binoms, selected = "Rhinopithecus roxelana"),
+      selectizeInput ("Genus", label="Choose genus:",choices=NULL),
+      selectizeInput ("Species", label="Choose species:",""),  
+        
+     # selectizeInput ("Species", label="Choose species:",choices = binoms, selected = "Rhinopithecus roxelana"),
       imageOutput("myImage"),
       htmlOutput("selURL") 
       ),
@@ -80,6 +86,9 @@ ui <- fluidPage(
       mainPanel(
         tabsetPanel(type = "tabs",
           tabPanel("Map",  leafletOutput("map")),
+          # tabPanel("Genus map",  leafletOutput("genusmap")),
+           tabPanel("Gbif Google map", h6("Experimental: May zoom to global scale arbitrarily"), google_mapOutput("gmap")),
+          
           tabPanel("Population density histogram and map",  
                    plotOutput("fig1"),
                    plotOutput("fig2"),
@@ -97,13 +106,25 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output,session) {
+  key <- "AIzaSyA3yXWsYuxhN62iHM3w-1sf_OGalbaoz0s"
+
 output$results_table<-renderDataTable(server = FALSE,dt(results_table))
+
+updateSelectizeInput(session, 'Genus', choices = bb$genus, selected = "Pongo", server = TRUE)
+Listen1 <- reactive({
+  list(input$Genus)
+})   
+observeEvent(Listen1(),{
+  gen<-input$Genus
+  b2 <- filter(bb,genus==gen)
+  updateSelectizeInput(session, 'Species', choices = b2$species, selected = b2$species[1],server = TRUE)
+})
   
 tryObserve({
     run<-TRUE
     
-    sp <- input$Species
-    
+    sp <- paste(input$Genus,input$Species)
+    genus<-input$Genus
 ###### Images
    
     
@@ -127,31 +148,42 @@ tryObserve({
     ## Get eoa
     # query<-sprintf("select * from mammals where binomial = '%s' ", sp)
     # IUCN_range<-st_read(con, query=query)
+    
     IUCN_range <-filter(primate_ranges,binomial==sp)
-    if(!dim(eoos)[1]>1) run<-FALSE
+   
+    
+    
+    # if(!dim(eoos)[1]>1) run<-FALSE
     ## Get gbif
     # query<-sprintf("select * from gbif_primates where species = '%s' ", sp)
     # GBIF_points   <-st_read(con, query=query)
     
     GBIF_points<-filter(gbif,species == sp)
+    # GBIF_points<-filter(gbif,str_detect(species,sp))
+    
+    
     if(!dim(GBIF_points)[1]>0) run<-FALSE
+    
+
     
   if(run){
     
+   
+    
+    
     st_crs(GBIF_points)<-st_crs(IUCN_range)
     GBIF_points <- st_filter(GBIF_points, IUCN_range)
-    
-   
+  
     GBIF_buffer<-st_transform(st_union(st_buffer(st_transform(GBIF_points,3857), dist=100000)),4326)
     
     
-    #query1<-sprintf("select * from mammals where binomial = '%s' ", sp)
-    #query<-sprintf("select p.name,p.pop_max, p.geom from populated_places p, (%s) s where st_intersects(s.geom, p.geom) ", query1)
-    #places<-st_read(con, query=query)
+    google_map_update(map_id = "gmap") %>% clear_markers() %>% 
+      add_markers(GBIF_points,opacity=1) 
     
-   
-    
-    
+    output$gmap <- renderGoogle_map({
+      sp <- input$Species
+      google_map(key=key,data=GBIF_points, zoom=10 ) %>% add_markers(GBIF_points,opacity=1) 
+    })
     #### Get population data
     pop <- raster("/home/rstudio/geoserver/data_dir/rasters/ghs/gdal_ghs2.tif")
     pop<-raster::crop(pop,IUCN_range)
@@ -183,9 +215,8 @@ tryObserve({
      plot(log10(pop+1), col=pal, main="Log10 population density")
         
       })
-      
-      
-    
+   
+   
     ##############################
     
     primates_map <-filter(primates_maps, binomial== sp)
@@ -199,8 +230,13 @@ tryObserve({
     
     
   }})
-   
-output$map2 <- renderLeaflet(eoos_map@map)
+
+# IUCN_genus <- filter(primate_ranges,str_detect(binomial,genus))
+# genmap<- mapview(IUCN_genus)   
+# output$genusmap <- renderLeaflet(genmap@map)
+
+
+
   
 }
 
